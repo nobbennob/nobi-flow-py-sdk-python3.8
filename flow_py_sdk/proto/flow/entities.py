@@ -112,3 +112,9 @@ class TransactionSignature(betterproto.Message):
     address: bytes = betterproto.bytes_field(1)
     key_id: int = betterproto.uint32_field(2)
     signature: bytes = betterproto.bytes_field(3)
+
+# @dataclass
+# class MTransactionSignature(betterproto.Message):
+#     address: bytes = betterproto.bytes_field(1)
+#     key_id: int = betterproto.uint32_field(2)
+#     signature = {}

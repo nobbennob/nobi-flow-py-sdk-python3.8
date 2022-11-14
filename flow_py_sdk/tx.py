@@ -45,6 +45,23 @@ class TxSignature(object):
         s.address = self.address.bytes
         return s
 
+class MTxSignature(object):
+    def __init__(
+        self, address: Address, key_id: int, signer_index: int, signature
+    ) -> None:
+        super().__init__()
+        self.address: Address = address
+        self.key_id: int = key_id
+        self.signer_index: int = signer_index
+        self.signature = signature
+
+    def rpc_form(self) -> entities.TransactionSignature:
+        s = entities.TransactionSignature()
+        s.signature = self.signature
+        s.key_id = self.key_id
+        s.address = self.address.bytes
+        return s
+
 
 class ProposalKey(object):
     def __init__(
@@ -82,6 +99,7 @@ class Tx(object):
         self.authorizers: List[Address] = []
         self.proposal_key: ProposalKey = proposal_key
         self.payload_signatures: List[TxSignature] = []
+        self.mpayload_signatures: List[MTxSignature] = []
         self.envelope_signatures: List[TxSignature] = []
         self.payload_signers: List[_TxSigner] = []
         self.envelope_signers: List[_TxSigner] = []
@@ -176,16 +194,22 @@ class Tx(object):
         )
         return self
 
-    def _submit_signature(self) -> "Tx":
+    def _submit_signature(self, is_multi_sig=False) -> "Tx":
         if self._missing_fields_for_signing():
             raise Exception(
                 f"The transaction needs [{', '.join(self._missing_fields_for_signing())}] before it can be signed"
             )
+
         for s in self.payload_signers:
-            signature = s.signer.sign_transaction(self.payload_message())
             signer_index = self._signer_list().index(s.address)
-            ts = TxSignature(s.address, s.key_id, signer_index, signature)
-            self.payload_signatures.append(ts)
+            if is_multi_sig:
+                signature = s.signer.multi_sign_transaction(self.payload_message())
+                ts = MTxSignature(s.address, s.key_id, signer_index, signature)
+                self.mpayload_signatures.append(ts)
+            else:
+                signature = s.signer.sign_transaction(self.payload_message())
+                ts = TxSignature(s.address, s.key_id, signer_index, signature)
+                self.payload_signatures.append(ts)
 
         for s in self.envelope_signers:
             signature = s.signer.sign_transaction(self.envelope_message())

@@ -47,6 +47,13 @@ class Signer(ABC):
         """
         pass
 
+    @abstractmethod
+    def multisign(self, message: bytes, tag: Optional[bytes] = None) -> bytes:
+        pass
+
+    def multi_sign_transaction(self, message: bytes):
+        return self.multisign(message, TransactionDomainTag)
+
     def sign_transaction(self, message: bytes) -> bytes:
         """The sign_user_message method signs a message with the transaction tag and returns the signature
 
